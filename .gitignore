@@ -1,0 +1,5 @@
+Abbildungen/
+data/
+extract_dataset/
+*.png
+*.pth
