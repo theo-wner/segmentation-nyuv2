@@ -13,8 +13,7 @@ class FPN(pl.LightningModule):
             encoder_name='se_resnext50_32x4d',
             encoder_weights='imagenet', 
             classes=15,
-            activation='softmax'
-        )
+            activation='softmax')
 
     def forward(self, x):
         return self.model(x)
