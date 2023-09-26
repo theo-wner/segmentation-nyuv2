@@ -138,17 +138,6 @@ class RandResize(object):
         image = F.interpolate(image, size=(new_h, new_w), mode="bilinear", align_corners=False)
         label = F.interpolate(label, size=(new_h, new_w), mode="nearest")
         return image.squeeze(), label.squeeze(0)
-    
-# Main function for testing
-if __name__ == '__main__':
-    dataset = NYUv2Dataset(split='val')
-
-    image, mask = dataset[0]
-
-    print(image.shape)
-    print(mask.shape)
-
-    visualize_img_mask(image, mask, mask)
 
 
 
