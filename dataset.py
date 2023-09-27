@@ -10,9 +10,12 @@ from torchvision import transforms
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import config
-from utils import visualize_img_mask
+from utils import visualize_img_gt, visualize_img_gt_pr
 
 class NYUv2DataModule(pl.LightningDataModule):
+    """
+    Represents the NYUv2 DataModule needed for further simplification
+    """
     def __init__(self, batch_size, num_workers):
         super().__init__()
         self.batch_size = batch_size
@@ -45,8 +48,8 @@ class NYUv2Dataset(Dataset):
         self.ignore_index = config.IGNORE_INDEX
 
         # Define the path of images and labels
-        self.images_dir = os.path.join(self.root_dir, 'image', 'train')
-        self.masks_dir = os.path.join(self.root_dir, 'seg13', 'train')
+        self.images_dir = os.path.join(self.root_dir, 'image', split)
+        self.masks_dir = os.path.join(self.root_dir, 'seg13', split)
 
         # Read the list of image filenames
         self.filenames = os.listdir(self.images_dir)
@@ -80,7 +83,7 @@ class NYUv2Dataset(Dataset):
                 pad_width_half = pad_width // 2
                 border = (pad_width_half, pad_width - pad_width_half, pad_height_half, pad_height - pad_height_half)
                 image = F.pad(image, border, 'constant', 0)
-                label = F.pad(label, border, 'constant', 255)
+                mask = F.pad(mask, border, 'constant', 255)
 
             # Random Crop
             i, j, h, w = transforms.RandomCrop(size=(256, 256)).get_params(image, output_size=(256, 256))
@@ -105,7 +108,7 @@ class NYUv2Dataset(Dataset):
     def _load_mask(self, index):
         mask_filename = os.path.join(self.masks_dir, self.filenames[index])
         mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
-        mask = TF.to_tensor(mask)
+        mask = torch.tensor(mask, dtype=torch.long).unsqueeze(0)
         return mask
     
 
@@ -139,5 +142,14 @@ class RandResize(object):
         label = F.interpolate(label, size=(new_h, new_w), mode="nearest")
         return image.squeeze(), label.squeeze(0)
 
+
+# Test the Dataset
+if __name__ == '__main__':
+    dataset = NYUv2Dataset('train')
+    image, mask = dataset[3]
+
+    visualize_img_gt(image, mask, filename='test_1.png')
+
+    visualize_img_gt_pr(image, mask, mask, filename='test_2.png')
 
 
