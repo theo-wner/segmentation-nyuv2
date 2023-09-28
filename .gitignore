@@ -1,5 +1,7 @@
 Abbildungen/
 data/
 extract_dataset/
+figures/
+lightning_logs/
 *.png
 *.pth
