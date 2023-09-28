@@ -3,5 +3,6 @@ data/
 extract_dataset/
 figures/
 lightning_logs/
+__pycache__/
 *.png
 *.pth
