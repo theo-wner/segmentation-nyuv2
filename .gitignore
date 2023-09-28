@@ -7,3 +7,4 @@ tb_logs/
 __pycache__/
 *.png
 *.pth
+delete_and_create.py

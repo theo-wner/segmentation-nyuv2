@@ -13,7 +13,7 @@ import shutil
 #os.rmdir('./Abbildungen/')
 
 # Verzeichnis und seine Inhalte löschen
-shutil.rmtree('./lightning_logs/')
+shutil.rmtree('./tb_logs/')
 
 # Neues Verzeichnis erstellen
 #os.mkdir('./extract_dataset/class_labels/')
