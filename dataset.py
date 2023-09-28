@@ -1,6 +1,5 @@
 import os
 import cv2
-import numpy as np
 import random
 import math
 import torch
@@ -9,6 +8,7 @@ import torchvision.transforms.functional as TF
 from torchvision import transforms
 from torch.nn import functional as F
 import pytorch_lightning as pl
+
 import config
 from utils import visualize_img_gt, visualize_img_gt_pr
 
@@ -27,7 +27,7 @@ class NYUv2DataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         self.train_dataset = NYUv2Dataset('train')
-        self.val_dataset = NYUv2Dataset('val')
+        self.val_dataset = NYUv2Dataset('test')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
@@ -41,7 +41,7 @@ class NYUv2Dataset(Dataset):
     Represents the NYUv2 Dataset
     Example for obtaining an image: image, mask = dataset[0]
     """
-    # split is 'train' or 'val', both splits are retrieved from the train set with different transforms
+    # split is 'train' or 'test', both splits are retrieved from the train set with different transforms
     def __init__(self, split='train'):
         self.root_dir = './data'
         self.image_set = split
@@ -91,7 +91,7 @@ class NYUv2Dataset(Dataset):
             mask = TF.crop(mask, i, j, h, w)
 
         # In case of validation, only resize to 256x256
-        elif self.image_set == 'val':
+        elif self.image_set == 'test':
             resizer = transforms.Resize(size=(256, 256), interpolation=transforms.InterpolationMode.NEAREST)
             image = resizer(image)
             mask = resizer(mask)
