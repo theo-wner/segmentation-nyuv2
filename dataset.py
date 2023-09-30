@@ -26,8 +26,8 @@ class NYUv2DataModule(pl.LightningDataModule):
         pass
 
     def setup(self, stage):
-        self.train_dataset = NYUv2Dataset('train')
-        self.val_dataset = NYUv2Dataset('test')
+        self.train_dataset = NYUv2Dataset(split='train')
+        self.val_dataset = NYUv2Dataset(split='test')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
@@ -48,8 +48,9 @@ class NYUv2Dataset(Dataset):
         self.ignore_index = config.IGNORE_INDEX
 
         # Define the path of images and labels
+        subset = 'seg' + str(config.NUM_CLASSES)
         self.images_dir = os.path.join(self.root_dir, 'image', split)
-        self.masks_dir = os.path.join(self.root_dir, 'seg13', split)
+        self.masks_dir = os.path.join(self.root_dir, subset, split)
 
         # Read the list of image filenames
         self.filenames = os.listdir(self.images_dir)

@@ -6,9 +6,9 @@ from dataset import NYUv2DataModule
 from model import DeepLab
 
 if __name__ == '__main__':
-
     # Initialize the logger
-    logger = TensorBoardLogger('tb_logs/', name='nyuv2_v0')
+    name = 'nyuv2_' + str(config.NUM_CLASSES) + '_classes'
+    logger = TensorBoardLogger('tb_logs/', name=name)
     
     # Initialize the model
     model = DeepLab()
@@ -20,6 +20,6 @@ if __name__ == '__main__':
     trainer = pl.Trainer(logger=logger, max_epochs=config.NUM_EPOCHS, accelerator='gpu', devices=config.DEVICES)
 
     # Train the model
+    if config.CHECKPOINT is not None:
+        trainer.fit(model, data_module, ckpt_path=config.CHECKPOINT)
     trainer.fit(model, data_module)
-
-
