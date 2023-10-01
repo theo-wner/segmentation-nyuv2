@@ -27,13 +27,17 @@ class NYUv2DataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         self.train_dataset = NYUv2Dataset(split='train')
-        self.val_dataset = NYUv2Dataset(split='test')
+        self.val_dataset = NYUv2Dataset(split='val')
+        self.test_dataset = NYUv2Dataset(split='test')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
     
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
+    
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
 
 
 class NYUv2Dataset(Dataset):
@@ -41,16 +45,22 @@ class NYUv2Dataset(Dataset):
     Represents the NYUv2 Dataset
     Example for obtaining an image: image, mask = dataset[0]
     """
-    # split is 'train' or 'test', both splits are retrieved from the train set with different transforms
+    # split is 'train' or 'test'
     def __init__(self, split='train'):
         self.root_dir = './data'
         self.image_set = split
         self.ignore_index = config.IGNORE_INDEX
 
         # Define the path of images and labels
+        # splits train and val are both retrieved from the training set with different transforms, 
+        # split test is retrieved from the test set
         subset = 'seg' + str(config.NUM_CLASSES)
-        self.images_dir = os.path.join(self.root_dir, 'image', split)
-        self.masks_dir = os.path.join(self.root_dir, subset, split)
+        if split == 'val':
+            self.images_dir = os.path.join(self.root_dir, 'image', 'train')
+            self.masks_dir = os.path.join(self.root_dir, subset, 'train')
+        else:
+            self.images_dir = os.path.join(self.root_dir, 'image', split)
+            self.masks_dir = os.path.join(self.root_dir, subset, split)
 
         # Read the list of image filenames
         self.filenames = os.listdir(self.images_dir)
@@ -91,8 +101,8 @@ class NYUv2Dataset(Dataset):
             image = TF.crop(image, i, j, h, w)
             mask = TF.crop(mask, i, j, h, w)
 
-        # In case of validation, only resize to 256x256
-        elif self.image_set == 'test':
+        # In case of validation or testing, only resize to 256x256
+        elif self.image_set == 'test' or self.image_set == 'val':
             resizer = transforms.Resize(size=(256, 256), interpolation=transforms.InterpolationMode.NEAREST)
             image = resizer(image)
             mask = resizer(mask)
