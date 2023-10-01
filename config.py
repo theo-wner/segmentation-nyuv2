@@ -15,7 +15,10 @@ BATCH_SIZE = 16
 NUM_WORKERS = 4
 NUM_EPOCHS = args.num_epochs
 DEVICES = [args.devices]
-CHECKPOINT = args.checkpoint
+CHECKPOINT = args.path_to_checkpoint
 
 # Command for training 13 classes with checkpoint:
-# python train.py --num_classes 13 --num_epochs 2000 --devices 2 --path_to_checkpoint ./tb_logs/nyuv2_13_classes/version_0/checkpoints/epoch=999-step=50000.ckpt
+# python train.py --num_classes 13 --num_epochs 2000 --devices 1 --path_to_checkpoint ./tb_logs/nyuv2_13_classes/version_0/checkpoints/epoch=999-step=50000.ckpt
+
+# Command for tensorboard:
+# tensorboard --logdir tb_logs/ --bind_all
