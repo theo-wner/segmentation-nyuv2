@@ -8,9 +8,12 @@ import torchvision.transforms.functional as TF
 from torchvision import transforms
 from torch.nn import functional as F
 import pytorch_lightning as pl
-
 import config
 from utils import visualize_img_gt, visualize_img_gt_pr
+
+"""
+Defines classes for NYUv2 Dataset
+"""
 
 class NYUv2DataModule(pl.LightningDataModule):
     """
@@ -77,7 +80,7 @@ class NYUv2Dataset(Dataset):
         if self.image_set == 'train':
             # Data augmentation
             # Randomly resize image and mask --> Image size changes!
-            random_scaler = RandResize(scale=(0.5, 2.0))
+            random_scaler = RandResize(scale=(0.5, 1.75))
             image, mask = random_scaler(image.unsqueeze(0).float(), mask.unsqueeze(0).float())
 
             # Random Horizontal Flip
@@ -86,10 +89,10 @@ class NYUv2Dataset(Dataset):
                 mask = TF.hflip(mask)
 
             # Preprocessing for Random Crop
-            if image.shape[1] < 256 or image.shape[2] < 256:
+            if image.shape[1] < 480 or image.shape[2] < 640:
                 height, width = image.shape[1], image.shape[2]
-                pad_height = max(256 - height, 0)
-                pad_width = max(256 - width, 0)
+                pad_height = max(480 - height, 0)
+                pad_width = max(640 - width, 0)
                 pad_height_half = pad_height // 2
                 pad_width_half = pad_width // 2
                 border = (pad_width_half, pad_width - pad_width_half, pad_height_half, pad_height - pad_height_half)
@@ -97,15 +100,13 @@ class NYUv2Dataset(Dataset):
                 mask = F.pad(mask, border, 'constant', 255)
 
             # Random Crop
-            i, j, h, w = transforms.RandomCrop(size=(256, 256)).get_params(image, output_size=(256, 256))
+            i, j, h, w = transforms.RandomCrop(size=(480, 640)).get_params(image, output_size=(480, 640))
             image = TF.crop(image, i, j, h, w)
             mask = TF.crop(mask, i, j, h, w)
 
-        # In case of validation or testing, only resize to 256x256
+        # In case of validation or testing, do nothing
         elif self.image_set == 'test' or self.image_set == 'val':
-            resizer = transforms.Resize(size=(256, 256), interpolation=transforms.InterpolationMode.NEAREST)
-            image = resizer(image)
-            mask = resizer(mask)
+            pass
 
         return image, mask
 
@@ -157,7 +158,10 @@ class RandResize(object):
 # Test the Dataset
 if __name__ == '__main__':
     dataset = NYUv2Dataset('train')
+
     image, mask = dataset[3]
+
+    print(image.shape)
 
     visualize_img_gt(image, mask, filename='test_1.png')
 

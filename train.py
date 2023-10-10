@@ -1,9 +1,12 @@
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
-
 import config
 from dataset import NYUv2DataModule
 from model import DeepLab
+
+"""
+Trains the model
+"""
 
 if __name__ == '__main__':
     # Initialize the logger
