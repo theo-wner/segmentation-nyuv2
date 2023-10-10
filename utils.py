@@ -24,14 +24,14 @@ class PolyLR(_LRScheduler):
 
 # Maps 40 classes to 13 classes
 def map_40_to_13(mask):
-    mapping = {0:12, 1:5, 2:6, 3:1, 4:4, 5:9, 6:10, 7:12, 8:13,	9:6, 10:8, 11:6, 12:13, 13:10, 14:6, 15:13,	
-               16:6, 17:7, 18:7, 19:5, 20:7, 21:3, 22:2, 23:6, 24:11, 25:7, 26:7, 27:7, 28:7, 29:7,	30:7, 
-               31:6, 32:7, 33:7, 34:7, 35:7, 36:7, 37:7, 38:6, 39:7}
+    mapping = {0:11, 1:4, 2:5, 3:0, 4:3, 5:8, 6:9, 7:11, 8:12,	9:5, 10:7, 11:5, 12:12, 13:9, 14:5, 15:12,	
+               16:5, 17:6, 18:6, 19:4, 20:6, 21:2, 22:1, 23:5, 24:10, 25:6, 26:6, 27:6, 28:6, 29:6,	30:6, 
+               31:5, 32:6, 33:6, 34:6, 35:6, 36:6, 37:6, 38:5, 39:6, 255:255}
     
     mask = mask.squeeze().numpy().astype(int)
 
-    for k, v in mapping.items():
-        mask[mask == k] = v
+    for r, c in np.ndindex(mask.shape):
+        mask[r, c] = mapping[mask[r, c]]
 
     return torch.tensor(mask, dtype=torch.long).unsqueeze(0)
 
