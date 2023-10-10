@@ -9,7 +9,7 @@ from torchvision import transforms
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import config
-from utils import visualize_img_gt, visualize_img_gt_pr
+from utils import visualize_img_gt, visualize_img_gt_pr, map_40_to_13
 
 """
 Defines classes for NYUv2 Dataset
@@ -157,11 +157,17 @@ class RandResize(object):
 
 # Test the Dataset
 if __name__ == '__main__':
-    dataset = NYUv2Dataset('train')
+    dataset = NYUv2Dataset('test')
 
     image, mask = dataset[3]
 
-    print(image.shape)
+    print(mask.shape)
+    print(mask.unique())
+
+    mask = map_40_to_13(mask)
+
+    print(mask.shape)
+    print(mask.unique())
 
     visualize_img_gt(image, mask, filename='test_1.png')
 

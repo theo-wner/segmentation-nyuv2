@@ -4,6 +4,7 @@ import matplotlib.patches as mpatches
 import os
 from torch.optim.lr_scheduler import _LRScheduler
 import numpy as np
+import torch
 
 """
 Defines utility functions
@@ -20,6 +21,19 @@ class PolyLR(_LRScheduler):
     def get_lr(self):
         self.current_iteration += 1
         return [base_lr * (1 - self.current_iteration / self.max_iterations) ** self.power for base_lr in self.base_lrs]
+
+# Maps 40 classes to 13 classes
+def map_40_to_13(mask):
+    mapping = {0:12, 1:5, 2:6, 3:1, 4:4, 5:9, 6:10, 7:12, 8:13,	9:6, 10:8, 11:6, 12:13, 13:10, 14:6, 15:13,	
+               16:6, 17:7, 18:7, 19:5, 20:7, 21:3, 22:2, 23:6, 24:11, 25:7, 26:7, 27:7, 28:7, 29:7,	30:7, 
+               31:6, 32:7, 33:7, 34:7, 35:7, 36:7, 37:7, 38:6, 39:7}
+    
+    mask = mask.squeeze().numpy().astype(int)
+
+    for k, v in mapping.items():
+        mask[mask == k] = v
+
+    return torch.tensor(mask, dtype=torch.long).unsqueeze(0)
 
 # Creates a tuple of image and GT mask
 def visualize_img_gt(image, gt_mask, filename='test.png'):
