@@ -16,10 +16,10 @@ class DeepLab(pl.LightningModule):
 
         # Initialize the model
         self.model = smp.DeepLabV3Plus(
-        encoder_name='resnet18',
-        encoder_weights='imagenet',
-        in_channels=3,
-        classes=config.NUM_CLASSES,
+            encoder_name='resnet18',
+            encoder_weights='imagenet',
+            in_channels=3,
+            classes=config.NUM_CLASSES,
         )
         
         # Initialize the loss function

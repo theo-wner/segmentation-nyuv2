@@ -11,7 +11,7 @@ args = parser.parse_args()
 
 IGNORE_INDEX = 255
 NUM_CLASSES = args.num_classes
-BATCH_SIZE = 16
+BATCH_SIZE = 8
 NUM_WORKERS = 4
 NUM_EPOCHS = args.num_epochs
 DEVICES = [args.devices]
