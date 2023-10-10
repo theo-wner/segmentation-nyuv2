@@ -4,8 +4,13 @@ from torch import nn
 import pytorch_lightning as pl
 import segmentation_models_pytorch as smp
 import ssl
-
+import math
 import config
+from utils import PolyLR
+
+"""
+Defines the model
+"""
 
 class DeepLab(pl.LightningModule):
     def __init__(self):
@@ -25,12 +30,16 @@ class DeepLab(pl.LightningModule):
         # Initialize the loss function
         self.criterion = nn.CrossEntropyLoss(ignore_index=config.IGNORE_INDEX)
 
+        # Initialize the optimizer
+        self.optimizer = torch.optim.AdamW(params=[
+            {'params': self.model.encoder.parameters(), 'lr': config.LEARNING_RATE},
+            {'params': self.model.decoder.parameters(), 'lr': 10 * config.LEARNING_RATE},
+            {'params': self.model.segmentation_head.parameters(), 'lr': 10 * config.LEARNING_RATE},
+        ], lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
+
         # Initialize the metrics
         self.train_iou = torchmetrics.JaccardIndex(task='multiclass', num_classes=config.NUM_CLASSES, ignore_index=config.IGNORE_INDEX)
         self.val_iou = torchmetrics.JaccardIndex(task='multiclass', num_classes=config.NUM_CLASSES, ignore_index=config.IGNORE_INDEX)
-
-        # Initialize the optimizer
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
 
     def forward(self, x):
         return self.model(x)
@@ -51,4 +60,7 @@ class DeepLab(pl.LightningModule):
         self.log('val_iou', val_iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
     def configure_optimizers(self):
-        return self.optimizer
+        iterations_per_epoch = math.ceil(config.NUMBER_TRAIN_IMAGES / (config.BATCH_SIZE * len(config.DEVICES)))
+        total_iterations = iterations_per_epoch * self.trainer.max_epochs
+        scheduler = PolyLR(self.optimizer, max_iterations=total_iterations, power=0.9)
+        return [self.optimizer], [{'scheduler': scheduler, 'interval': 'step'}]

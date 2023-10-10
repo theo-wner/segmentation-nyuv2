@@ -8,9 +8,12 @@ import torchvision.transforms.functional as TF
 from torchvision import transforms
 from torch.nn import functional as F
 import pytorch_lightning as pl
-
 import config
 from utils import visualize_img_gt, visualize_img_gt_pr
+
+"""
+Defines classes for NYUv2 Dataset
+"""
 
 class NYUv2DataModule(pl.LightningDataModule):
     """
@@ -27,13 +30,17 @@ class NYUv2DataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         self.train_dataset = NYUv2Dataset(split='train')
-        self.val_dataset = NYUv2Dataset(split='test')
+        self.val_dataset = NYUv2Dataset(split='val')
+        self.test_dataset = NYUv2Dataset(split='test')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
     
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
+    
+    def test_dataloader(self):
+        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
 
 
 class NYUv2Dataset(Dataset):
@@ -41,16 +48,22 @@ class NYUv2Dataset(Dataset):
     Represents the NYUv2 Dataset
     Example for obtaining an image: image, mask = dataset[0]
     """
-    # split is 'train' or 'test', both splits are retrieved from the train set with different transforms
+    # split is 'train' or 'test'
     def __init__(self, split='train'):
         self.root_dir = './data'
         self.image_set = split
         self.ignore_index = config.IGNORE_INDEX
 
         # Define the path of images and labels
+        # splits train and val are both retrieved from the training set with different transforms, 
+        # split test is retrieved from the test set
         subset = 'seg' + str(config.NUM_CLASSES)
-        self.images_dir = os.path.join(self.root_dir, 'image', split)
-        self.masks_dir = os.path.join(self.root_dir, subset, split)
+        if split == 'val':
+            self.images_dir = os.path.join(self.root_dir, 'image', 'train')
+            self.masks_dir = os.path.join(self.root_dir, subset, 'train')
+        else:
+            self.images_dir = os.path.join(self.root_dir, 'image', split)
+            self.masks_dir = os.path.join(self.root_dir, subset, split)
 
         # Read the list of image filenames
         self.filenames = os.listdir(self.images_dir)
@@ -67,7 +80,7 @@ class NYUv2Dataset(Dataset):
         if self.image_set == 'train':
             # Data augmentation
             # Randomly resize image and mask --> Image size changes!
-            random_scaler = RandResize(scale=(0.5, 2.0))
+            random_scaler = RandResize(scale=(0.5, 1.75))
             image, mask = random_scaler(image.unsqueeze(0).float(), mask.unsqueeze(0).float())
 
             # Random Horizontal Flip
@@ -76,10 +89,10 @@ class NYUv2Dataset(Dataset):
                 mask = TF.hflip(mask)
 
             # Preprocessing for Random Crop
-            if image.shape[1] < 256 or image.shape[2] < 256:
+            if image.shape[1] < 480 or image.shape[2] < 640:
                 height, width = image.shape[1], image.shape[2]
-                pad_height = max(256 - height, 0)
-                pad_width = max(256 - width, 0)
+                pad_height = max(480 - height, 0)
+                pad_width = max(640 - width, 0)
                 pad_height_half = pad_height // 2
                 pad_width_half = pad_width // 2
                 border = (pad_width_half, pad_width - pad_width_half, pad_height_half, pad_height - pad_height_half)
@@ -87,15 +100,13 @@ class NYUv2Dataset(Dataset):
                 mask = F.pad(mask, border, 'constant', 255)
 
             # Random Crop
-            i, j, h, w = transforms.RandomCrop(size=(256, 256)).get_params(image, output_size=(256, 256))
+            i, j, h, w = transforms.RandomCrop(size=(480, 640)).get_params(image, output_size=(480, 640))
             image = TF.crop(image, i, j, h, w)
             mask = TF.crop(mask, i, j, h, w)
 
-        # In case of validation, only resize to 256x256
-        elif self.image_set == 'test':
-            resizer = transforms.Resize(size=(256, 256), interpolation=transforms.InterpolationMode.NEAREST)
-            image = resizer(image)
-            mask = resizer(mask)
+        # In case of validation or testing, do nothing
+        elif self.image_set == 'test' or self.image_set == 'val':
+            pass
 
         return image, mask
 
@@ -147,7 +158,10 @@ class RandResize(object):
 # Test the Dataset
 if __name__ == '__main__':
     dataset = NYUv2Dataset('train')
+
     image, mask = dataset[3]
+
+    print(image.shape)
 
     visualize_img_gt(image, mask, filename='test_1.png')
 

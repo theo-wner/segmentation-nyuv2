@@ -1,8 +1,11 @@
 import torch
-
 from model import DeepLab
 from dataset import NYUv2Dataset
 from utils import visualize_img_gt_pr
+
+"""
+Tests the model
+"""
 
 # Initialize the model
 model = DeepLab()
