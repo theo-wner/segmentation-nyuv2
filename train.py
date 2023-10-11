@@ -16,7 +16,7 @@ if __name__ == '__main__':
     # Initialize the model
     model = DeepLab()
 
-     # Initialize the data module
+    # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
 
     # Initialize the trainer
