@@ -13,10 +13,10 @@ if __name__ == '__main__':
     # Initialize the model
     model = DeepLab()
     if config.CPU_USAGE:
-        checkpoint = torch.load("epoch=1999-step=200000.ckpt", map_location=torch.device('cpu'))
+        checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint["state_dict"])
     else:
-        model = model.load_from_checkpoint("epoch=1999-step=200000.ckpt")
+        model = model.load_from_checkpoint(config.CHECKPOINT)
 
     # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)

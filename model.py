@@ -21,7 +21,7 @@ class DeepLab(pl.LightningModule):
 
         # Initialize the model
         self.model = smp.DeepLabV3Plus(
-            encoder_name='resnet18',
+            encoder_name='resnet101',
             encoder_weights='imagenet',
             in_channels=3,
             classes=config.NUM_CLASSES,
@@ -50,8 +50,8 @@ class DeepLab(pl.LightningModule):
         scores = self.model(images)
         loss = self.criterion(scores, masks.squeeze().long())
         train_iou = self.train_iou(torch.softmax(scores, dim=1), masks.squeeze())
-        self.log('train_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
-        self.log('train_iou', train_iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('train_iou', train_iou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
