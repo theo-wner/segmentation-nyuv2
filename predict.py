@@ -1,5 +1,5 @@
 import torch
-from model import DeepLab
+from model import MiT
 from dataset import NYUv2Dataset
 from tqdm import tqdm
 
@@ -12,7 +12,7 @@ Predicts with the model
 
 if __name__ == '__main__':
     # Initialize the model (and load it to the CPU)
-    model = DeepLab()
+    model = MiT()
 
     if config.CPU_USAGE:
         checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
