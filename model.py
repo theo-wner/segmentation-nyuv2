@@ -12,7 +12,7 @@ from utils import PolyLR
 Defines the model
 """
 
-class DeepLab(pl.LightningModule):
+class MiT(pl.LightningModule):
     def __init__(self):
         super().__init__()
 
@@ -20,8 +20,8 @@ class DeepLab(pl.LightningModule):
         ssl._create_default_https_context = ssl._create_unverified_context
 
         # Initialize the model
-        self.model = smp.DeepLabV3Plus(
-            encoder_name='resnet101',
+        self.model = smp.Unet(
+            encoder_name='mit_b5',
             encoder_weights='imagenet',
             in_channels=3,
             classes=config.NUM_CLASSES,

@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import config
 from dataset import NYUv2DataModule
-from model import DeepLab
+from model import MiT
 import torch
 
 """
@@ -11,7 +11,7 @@ Tests the model
 
 if __name__ == '__main__':
     # Initialize the model
-    model = DeepLab()
+    model = MiT()
     if config.CPU_USAGE:
         checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint["state_dict"])
