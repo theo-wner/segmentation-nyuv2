@@ -97,7 +97,7 @@ class NYUv2Dataset(Dataset):
                 pad_width_half = pad_width // 2
                 border = (pad_width_half, pad_width - pad_width_half, pad_height_half, pad_height - pad_height_half)
                 image = F.pad(image, border, 'constant', 0)
-                mask = F.pad(mask, border, 'constant', 255)
+                mask = F.pad(mask, border, 'constant', config.IGNORE_INDEX)
 
             # Random Crop
             i, j, h, w = transforms.RandomCrop(size=(480, 640)).get_params(image, output_size=(480, 640))

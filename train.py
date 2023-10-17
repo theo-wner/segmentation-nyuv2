@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import config
 from dataset import NYUv2DataModule
-from model import MiT
+from model import MiT, SegFormer
 
 """
 Trains the model
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     logger = TensorBoardLogger('tb_logs/', name=name)
     
     # Initialize the model
-    model = MiT()
+    model = SegFormer()
 
     # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)

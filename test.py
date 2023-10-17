@@ -16,7 +16,7 @@ if __name__ == '__main__':
         checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint["state_dict"])
     else:
-        model = model.load_from_checkpoint(config.CHECKPOINT)
+        model = MiT.load_from_checkpoint(config.CHECKPOINT)
 
     # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
