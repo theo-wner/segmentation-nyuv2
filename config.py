@@ -6,7 +6,7 @@ Defines the Hyperparameters as command line arguments
 
 parser = argparse.ArgumentParser(description='Parser')
 
-parser.add_argument('--backbone', type=str, default='b2')
+parser.add_argument('--backbone', type=str, default='b5')
 parser.add_argument('--num_classes', type=int, default=40)
 parser.add_argument('--batch_size', type=int, default=8)
 parser.add_argument('--num_workers', type=int, default=4)

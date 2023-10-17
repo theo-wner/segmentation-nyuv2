@@ -13,7 +13,7 @@ import shutil
 #os.rmdir('./Abbildungen/')
 
 # Verzeichnis und seine Inhalte löschen
-shutil.rmtree('./tb_logs/nyuv2_40_classes/version_1')
+shutil.rmtree('./tb_logs/nyuv2_40_classes/version_0')
 
 # Neues Verzeichnis erstellen
 #os.mkdir('./extract_dataset/class_labels/')
