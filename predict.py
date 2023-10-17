@@ -2,6 +2,7 @@ import torch
 from model import MiT, SegFormer
 from dataset import NYUv2Dataset
 from tqdm import tqdm
+import transformers
 
 from utils import visualize_img_gt_pr, map_40_to_13
 import config
@@ -11,6 +12,9 @@ Predicts with the model
 """
 
 if __name__ == '__main__':
+    # Set the verbosity of the transformers library to error
+    transformers.logging.set_verbosity_error()
+
     # Initialize the model (and load it to the CPU)
     model = SegFormer()
 

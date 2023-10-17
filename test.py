@@ -4,12 +4,16 @@ import config
 from dataset import NYUv2DataModule
 from model import MiT, SegFormer
 import torch
+import transformers
 
 """
 Tests the model
 """
 
 if __name__ == '__main__':
+    # Set the verbosity of the transformers library to error
+    transformers.logging.set_verbosity_error()
+
     # Initialize the model
     model = SegFormer()
     if config.CPU_USAGE:

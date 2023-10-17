@@ -22,6 +22,7 @@ args = parser.parse_args()
 IGNORE_INDEX = 255
 NUMBER_TRAIN_IMAGES = 795
 NUMBER_TEST_IMAGES = 654
+PRECISION = '16-mixed'
 BACKBONE = args.backbone
 NUM_CLASSES = args.num_classes
 BATCH_SIZE = args.batch_size
