@@ -2,7 +2,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import config
 from dataset import NYUv2DataModule
-from model import MiT
+from model import MiT, SegFormer
 import torch
 
 """
@@ -11,12 +11,12 @@ Tests the model
 
 if __name__ == '__main__':
     # Initialize the model
-    model = MiT()
+    model = SegFormer()
     if config.CPU_USAGE:
         checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint["state_dict"])
     else:
-        model = MiT.load_from_checkpoint(config.CHECKPOINT)
+        model = SegFormer.load_from_checkpoint(config.CHECKPOINT)
 
     # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)

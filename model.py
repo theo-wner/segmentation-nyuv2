@@ -92,13 +92,20 @@ class SegFormer(pl.LightningModule):
         self.val_iou = torchmetrics.JaccardIndex(task='multiclass', num_classes=config.NUM_CLASSES, ignore_index=config.IGNORE_INDEX)
         self.test_iou = torchmetrics.JaccardIndex(task='multiclass', num_classes=config.NUM_CLASSES, ignore_index=config.IGNORE_INDEX)
 
+    def forward(self, x):
+        return self.model(x)
+    
 
     def training_step(self, batch, batch_index):
         images, labels = batch
 
         loss, logits = self.model(images, labels.squeeze(dim=1).long())    # uses CE loss by default
         
+        upsampled_logits = torch.nn.functional.interpolate(logits, size=images.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
+        self.train_iou(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
+
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('train_iou', self.train_iou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
         return loss
     
@@ -111,7 +118,7 @@ class SegFormer(pl.LightningModule):
         upsampled_logits = torch.nn.functional.interpolate(logits, size=images.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
         self.val_iou(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
         
-        self.log('val_iou', self.val_iou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('val_iou', self.val_iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
 
     def test_step(self, batch, batch_index):
@@ -122,7 +129,7 @@ class SegFormer(pl.LightningModule):
         upsampled_logits = torch.nn.functional.interpolate(logits, size=images.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
         self.test_iou(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
         
-        self.log('test_iou', self.test_iou, on_step=True, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('test_iou', self.test_iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
 
 
     def configure_optimizers(self):

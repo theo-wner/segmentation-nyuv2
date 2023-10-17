@@ -1,5 +1,5 @@
 import torch
-from model import MiT
+from model import MiT, SegFormer
 from dataset import NYUv2Dataset
 from tqdm import tqdm
 
@@ -12,13 +12,13 @@ Predicts with the model
 
 if __name__ == '__main__':
     # Initialize the model (and load it to the CPU)
-    model = MiT()
+    model = SegFormer()
 
     if config.CPU_USAGE:
         checkpoint = torch.load(config.CHECKPOINT, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint["state_dict"])
     else:
-        model = MiT.load_from_checkpoint(config.CHECKPOINT)
+        model = SegFormer.load_from_checkpoint(config.CHECKPOINT)
         model = model.to(config.DEVICES[0])
     model.eval()
 
@@ -33,8 +33,9 @@ if __name__ == '__main__':
             image = image.to(config.DEVICES[0])
 
         with torch.no_grad():
-            pred = model(image.unsqueeze(0))
-            pred = torch.argmax(pred, dim=1).squeeze()
+            logits = model(image.unsqueeze(0))[0]
+            upsampled_logits = torch.nn.functional.interpolate(logits, size=image.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
+            pred = torch.argmax(upsampled_logits, dim=1).squeeze()
 
         # Mask out the predictions where the original image is black in case you predict augmented train images
         pred[image.sum(dim=0) == 0] = 255
