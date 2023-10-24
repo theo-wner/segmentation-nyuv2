@@ -1,19 +1,16 @@
 import os
 import cv2
-import random
-import math
-import torch
 from torch.utils.data import Dataset, DataLoader
-import torchvision.transforms.functional as TF
-from torchvision import transforms
+import albumentations as A
+from albumentations.pytorch.transforms import ToTensorV2
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import config
-from utils import visualize_img_gt, visualize_img_gt_pr, map_40_to_13
+from utils import visualize_img_gt_pr, map_40_to_13
 
-"""
-Defines classes for NYUv2 Dataset
-"""
+'''
+Defines classes for the NYUv2 dataset
+'''
 
 class NYUv2DataModule(pl.LightningDataModule):
     """
@@ -30,147 +27,83 @@ class NYUv2DataModule(pl.LightningDataModule):
 
     def setup(self, stage):
         self.train_dataset = NYUv2Dataset(split='train')
-        self.val_dataset = NYUv2Dataset(split='val')
-        self.test_dataset = NYUv2Dataset(split='test')
+        self.val_dataset = NYUv2Dataset(split='test')
 
     def train_dataloader(self):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers, drop_last=False)
     
     def val_dataloader(self):
         return DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
-    
-    def test_dataloader(self):
-        return DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers, drop_last=False)
 
 
 class NYUv2Dataset(Dataset):
     """
     Represents the NYUv2 Dataset
-    Example for obtaining an image: image, mask = dataset[0]
+    Example for obtaining an image: image, depth = dataset[0]
     """
-    # split is 'train' or 'test'
+
+    # Split can be either 'train' or 'test'
     def __init__(self, split='train'):
         self.root_dir = './data'
-        self.image_set = split
-        self.ignore_index = config.IGNORE_INDEX
-
-        # Define the path of images and labels
-        # splits train and val are both retrieved from the training set with different transforms, 
-        # split test is retrieved from the test set
-        subset = 'seg' + str(config.NUM_CLASSES)
-        if split == 'val':
-            self.images_dir = os.path.join(self.root_dir, 'image', 'train')
-            self.masks_dir = os.path.join(self.root_dir, subset, 'train')
-        else:
-            self.images_dir = os.path.join(self.root_dir, 'image', split)
-            self.masks_dir = os.path.join(self.root_dir, subset, split)
-
-        # Read the list of image filenames
+        self.split = split
+        self.images_dir = os.path.join(self.root_dir, 'image', self.split)
+        self.masks_dir = os.path.join(self.root_dir, 'seg40', self.split)
         self.filenames = os.listdir(self.images_dir)
 
     def __len__(self):
         return len(self.filenames)
-        
-    def __getitem__(self, index):
-        # Load image and mask
-        image = self._load_image(index)
-        mask = self._load_mask(index)
-
-        # In case of training, apply data augmentation
-        if self.image_set == 'train':
-            # Data augmentation
-            # Randomly resize image and mask --> Image size changes!
-            random_scaler = RandResize(scale=(0.5, 1.75))
-            image, mask = random_scaler(image.unsqueeze(0).float(), mask.unsqueeze(0).float())
-
-            # Random Horizontal Flip
-            if random.random() < 0.5:
-                image = TF.hflip(image)
-                mask = TF.hflip(mask)
-
-            # Preprocessing for Random Crop
-            if image.shape[1] < 480 or image.shape[2] < 640:
-                height, width = image.shape[1], image.shape[2]
-                pad_height = max(480 - height, 0)
-                pad_width = max(640 - width, 0)
-                pad_height_half = pad_height // 2
-                pad_width_half = pad_width // 2
-                border = (pad_width_half, pad_width - pad_width_half, pad_height_half, pad_height - pad_height_half)
-                image = F.pad(image, border, 'constant', 0)
-                mask = F.pad(mask, border, 'constant', config.IGNORE_INDEX)
-
-            # Random Crop
-            i, j, h, w = transforms.RandomCrop(size=(480, 640)).get_params(image, output_size=(480, 640))
-            image = TF.crop(image, i, j, h, w)
-            mask = TF.crop(mask, i, j, h, w)
-
-        # In case of validation or testing, do nothing
-        elif self.image_set == 'test' or self.image_set == 'val':
-            pass
-
-        return image, mask
-
+    
     def _load_image(self, index):
         image_filename = os.path.join(self.images_dir, self.filenames[index])
         image = cv2.imread(image_filename)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = TF.to_tensor(image)
         return image
-        
+    
     def _load_mask(self, index):
         mask_filename = os.path.join(self.masks_dir, self.filenames[index])
-        mask = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
-        mask = torch.tensor(mask, dtype=torch.long).unsqueeze(0)
-        return mask
+        depth = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
+        return depth
+    
+    def get_training_augmentation(self):
+        train_augmentation = A.Compose([
+            A.RandomScale(scale_limit=(-0.5, +0.75), p=1), # Relates to Scaling between 0.5 and 1.75
+            A.PadIfNeeded(min_height=480, min_width=640, always_apply=True, border_mode=cv2.BORDER_CONSTANT, value=(0,0,0), mask_value=config.IGNORE_INDEX), # If the image gets smaller than 480x640    
+            A.RandomCrop(height=480, width=640, p=1),
+            A.HorizontalFlip(p=0.5),
+            A.ToFloat(),
+            ToTensorV2(transpose_mask=True)
+        ])
+        return train_augmentation
+    
+    def get_validation_augmentation(self):
+        val_augmentation = A.Compose([
+            A.ToFloat(),
+            ToTensorV2(transpose_mask=True)
+        ])
+        return val_augmentation
+
+    def __getitem__(self, index):
+        image = self._load_image(index)
+        mask = self._load_mask(index)
+
+        # In case of training, apply data augmentation (ToTensor already included)
+        if self.split == 'train':
+            train_augmentation = self.get_training_augmentation()
+            transformed = train_augmentation(image=image, mask=mask)
+            image, mask = transformed['image'], transformed['mask'].unsqueeze(0)
+
+        # In case of validation, apply validation augmentation (ToTensor already included)
+        elif self.split == 'test':
+            val_augmentation = self.get_validation_augmentation()
+            transformed = val_augmentation(image=image, mask=mask)
+            image, mask = transformed['image'], transformed['mask'].unsqueeze(0)
+            
+        return image, mask
     
 
-class RandResize(object):
-    """
-    Randomly resize image & label with scale factor in [scale_min, scale_max]
-    The size of the image gets changed!
-    Source: https://github.com/Haochen-Wang409/U2PL/blob/main/u2pl/dataset/augmentation.py
-    """
-    def __init__(self, scale, aspect_ratio=None):
-        self.scale = scale
-        self.aspect_ratio = aspect_ratio
-
-    def __call__(self, image, label):
-        if random.random() < 0.5:
-            temp_scale = self.scale[0] + (1.0 - self.scale[0]) * random.random()
-        else:
-            temp_scale = 1.0 + (self.scale[1] - 1.0) * random.random()
-
-        temp_aspect_ratio = 1.0
-        if self.aspect_ratio is not None:
-            temp_aspect_ratio = (self.aspect_ratio[0] + (self.aspect_ratio[1] - self.aspect_ratio[0]) * random.random())
-            temp_aspect_ratio = math.sqrt(temp_aspect_ratio)
-
-        scale_factor_w = temp_scale * temp_aspect_ratio
-        scale_factor_h = temp_scale / temp_aspect_ratio
-        h, w = image.size()[-2:]
-        new_w = int(w * scale_factor_w)
-        new_h = int(h * scale_factor_h)
-        image = F.interpolate(image, size=(new_h, new_w), mode="bilinear", align_corners=False)
-        label = F.interpolate(label, size=(new_h, new_w), mode="nearest")
-        return image.squeeze(), label.squeeze(0)
-
-
-# Test the Dataset
 if __name__ == '__main__':
-    dataset = NYUv2Dataset('test')
-
-    image, mask = dataset[3]
-
+    dataset = NYUv2Dataset(split='train')
+    image, mask = dataset[0]
+    print(image.shape)
     print(mask.shape)
-    print(mask.unique())
-
-    mask = map_40_to_13(mask)
-
-    print(mask.shape)
-    print(mask.unique())
-
-    visualize_img_gt(image, mask, filename='test_1.png')
-
-    visualize_img_gt_pr(image, mask, mask, filename='test_2.png')
-
-
+    visualize_img_gt_pr(image, mask, mask)
