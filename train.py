@@ -2,37 +2,31 @@ import pytorch_lightning as pl
 from pytorch_lightning.loggers import TensorBoardLogger
 import config
 from dataset import NYUv2DataModule
-from model import MiT, SegFormer
+from model import SegFormer
+import transformers
 
 """
 Trains the model
 """
 
 if __name__ == '__main__':
+    # Set the verbosity of the transformers library to error
+    transformers.logging.set_verbosity_error()
+
     # Initialize the logger
-    name = 'nyuv2_' + str(config.NUM_CLASSES) + '_classes'
-    logger = TensorBoardLogger('tb_logs/', name=name)
-    
-    # Initialize the model
-    model = SegFormer()
+    logger = TensorBoardLogger('logs', name='segformer')
 
     # Initialize the data module
     data_module = NYUv2DataModule(batch_size=config.BATCH_SIZE, num_workers=config.NUM_WORKERS)
 
+    # Initialize the model
+    model = SegFormer()
+
     # Initialize the trainer
     if config.CPU_USAGE:
-        trainer = pl.Trainer(logger=logger, max_epochs=config.NUM_EPOCHS, accelerator='cpu')
+        trainer = pl.Trainer(logger=logger, max_epochs=config.NUM_EPOCHS, accelerator='cpu', precision=config.PRECISION)
     else:
-        trainer = pl.Trainer(logger=logger, max_epochs=config.NUM_EPOCHS, accelerator='gpu', devices=config.DEVICES)
+        trainer = pl.Trainer(logger=logger, max_epochs=config.NUM_EPOCHS, accelerator='gpu', precision=config.PRECISION, devices=config.DEVICES)
 
     # Train the model
-    if config.CHECKPOINT is not None:
-        trainer.fit(model, data_module, ckpt_path=config.CHECKPOINT)
-    trainer.fit(model, data_module)
-
-
-# Command for training 13 classes with checkpoint:
-# python train.py --num_classes 13 --num_epochs 2000 --devices 1 --path_to_checkpoint ./tb_logs/nyuv2_13_classes/version_0/checkpoints/epoch=999-step=50000.ckpt
-
-# Command for tensorboard:
-# tensorboard --logdir tb_logs/ --bind_all
+    trainer.fit(model, data_module, ckpt_path=config.CHECKPOINT)
