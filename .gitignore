@@ -4,6 +4,7 @@ extract_dataset/
 figures/
 lightning_logs/
 tb_logs/
+logs/
 __pycache__/
 *.png
 *.pth
