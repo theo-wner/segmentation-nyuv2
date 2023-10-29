@@ -71,14 +71,14 @@ class NYUv2Dataset(Dataset):
             A.RandomCrop(height=480, width=640, p=1),
             A.HorizontalFlip(p=0.5),
             A.ToFloat(),
-            ToTensorV2(transpose_mask=True)
+            ToTensorV2()
         ])
         return train_augmentation
     
     def get_validation_augmentation(self):
         val_augmentation = A.Compose([
             A.ToFloat(),
-            ToTensorV2(transpose_mask=True)
+            ToTensorV2()
         ])
         return val_augmentation
 

@@ -64,6 +64,6 @@ class SegFormer(pl.LightningModule):
 
         preds = torch.softmax(upsampled_logits, dim=1)
 
-        iou = self.metrics(preds, labels.squeeze(dim=1))
+        self.metrics(preds, labels.squeeze(dim=1))
         
-        self.log('iou', iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('iou', self.metrics, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)

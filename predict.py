@@ -1,5 +1,5 @@
 import torch
-from model import MiT, SegFormer
+from model import SegFormer
 from dataset import NYUv2Dataset
 from tqdm import tqdm
 import transformers
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     model.eval()
 
     # Dataset
-    dataset = NYUv2Dataset(split='test')
+    dataset = NYUv2Dataset(split='train')
 
     # Predict
     for i in tqdm(range(50)):
@@ -39,7 +39,7 @@ if __name__ == '__main__':
         with torch.no_grad():
             logits = model(image.unsqueeze(0))[0]
             upsampled_logits = torch.nn.functional.interpolate(logits, size=image.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
-            pred = torch.argmax(upsampled_logits, dim=1).squeeze()
+            pred = torch.argmax(torch.softmax(upsampled_logits, dim=1), dim=1).squeeze()
 
         # Mask out the predictions where the original image is black in case you predict augmented train images
         pred[image.sum(dim=0) == 0] = 255
