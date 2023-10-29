@@ -1,9 +1,6 @@
 import torch
 import torchmetrics
-from torch import nn
 import pytorch_lightning as pl
-import segmentation_models_pytorch as smp
-import ssl
 import math
 from transformers import SegformerForSemanticSegmentation, SegformerConfig
 import config
@@ -62,8 +59,6 @@ class SegFormer(pl.LightningModule):
         
         upsampled_logits = torch.nn.functional.interpolate(logits, size=images.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
 
-        preds = torch.softmax(upsampled_logits, dim=1)
-
-        self.metrics(preds, labels.squeeze(dim=1))
+        self.metrics(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
         
         self.log('iou', self.metrics, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)

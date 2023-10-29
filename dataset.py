@@ -1,8 +1,11 @@
 import os
+import numpy as np
+from PIL import Image
+import torch
 import cv2
+import torchvision.transforms.functional as TF
 from torch.utils.data import Dataset, DataLoader
 import albumentations as A
-from albumentations.pytorch.transforms import ToTensorV2
 from torch.nn import functional as F
 import pytorch_lightning as pl
 import config
@@ -47,7 +50,7 @@ class NYUv2Dataset(Dataset):
         self.root_dir = './data'
         self.split = split
         self.images_dir = os.path.join(self.root_dir, 'image', self.split)
-        self.masks_dir = os.path.join(self.root_dir, 'seg40', self.split)
+        self.labels_dir = os.path.join(self.root_dir, 'seg40', self.split)
         self.filenames = os.listdir(self.images_dir)
 
     def __len__(self):
@@ -55,14 +58,13 @@ class NYUv2Dataset(Dataset):
     
     def _load_image(self, index):
         image_filename = os.path.join(self.images_dir, self.filenames[index])
-        image = cv2.imread(image_filename)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = np.array(Image.open(image_filename))
         return image
     
-    def _load_mask(self, index):
-        mask_filename = os.path.join(self.masks_dir, self.filenames[index])
-        depth = cv2.imread(mask_filename, cv2.IMREAD_GRAYSCALE)
-        return depth
+    def _load_label(self, index):
+        label_filename = os.path.join(self.labels_dir, self.filenames[index])
+        label = np.array(Image.open(label_filename))
+        return label
     
     def get_training_augmentation(self):
         train_augmentation = A.Compose([
@@ -70,40 +72,32 @@ class NYUv2Dataset(Dataset):
             A.PadIfNeeded(min_height=480, min_width=640, always_apply=True, border_mode=cv2.BORDER_CONSTANT, value=(0,0,0), mask_value=config.IGNORE_INDEX), # If the image gets smaller than 480x640    
             A.RandomCrop(height=480, width=640, p=1),
             A.HorizontalFlip(p=0.5),
-            A.ToFloat(),
-            ToTensorV2()
         ])
         return train_augmentation
-    
-    def get_validation_augmentation(self):
-        val_augmentation = A.Compose([
-            A.ToFloat(),
-            ToTensorV2()
-        ])
-        return val_augmentation
+
 
     def __getitem__(self, index):
         image = self._load_image(index)
-        mask = self._load_mask(index)
+        label = self._load_label(index)
 
-        # In case of training, apply data augmentation (ToTensor already included)
+        # In case of training, apply data augmentation and ToTensor
         if self.split == 'train':
             train_augmentation = self.get_training_augmentation()
-            transformed = train_augmentation(image=image, mask=mask)
-            image, mask = transformed['image'], transformed['mask'].unsqueeze(0)
+            transformed = train_augmentation(image=image, mask=label)
+            image, label = transformed['image'], transformed['mask']
+            image = TF.to_tensor(image)
+            label = torch.tensor(np.array(label), dtype=torch.long).unsqueeze(0)
 
-        # In case of validation, apply validation augmentation (ToTensor already included)
+        # In case of validation, only apply ToTensor
         elif self.split == 'test':
-            val_augmentation = self.get_validation_augmentation()
-            transformed = val_augmentation(image=image, mask=mask)
-            image, mask = transformed['image'], transformed['mask'].unsqueeze(0)
+            image = TF.to_tensor(image)
+            label = torch.tensor(np.array(label), dtype=torch.long).unsqueeze(0)
             
-        return image, mask
+        return image, label
     
 
 if __name__ == '__main__':
     dataset = NYUv2Dataset(split='train')
-    image, mask = dataset[0]
+    image, label = dataset[0]
     print(image.shape)
-    print(mask.shape)
-    visualize_img_gt_pr(image, mask, mask)
+    print(label.shape)
