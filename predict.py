@@ -27,7 +27,7 @@ if __name__ == '__main__':
     model.eval()
 
     # Dataset
-    dataset = NYUv2Dataset(split='train')
+    dataset = NYUv2Dataset(split='test')
 
     # Predict
     for i in tqdm(range(50)):
