@@ -59,6 +59,6 @@ class SegFormer(pl.LightningModule):
         
         upsampled_logits = torch.nn.functional.interpolate(logits, size=images.shape[-2:], mode="bilinear", align_corners=False)    # upsample logits to input image size (SegFormer outputs h/4 and w/4 by default, see paper)
 
-        iou = self.metrics(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
+        self.metrics(torch.softmax(upsampled_logits, dim=1), labels.squeeze(dim=1))
         
-        self.log('iou', iou, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
+        self.log('iou', self.metrics, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
